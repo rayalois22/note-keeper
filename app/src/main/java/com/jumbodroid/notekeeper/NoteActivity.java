@@ -26,7 +26,7 @@ import java.util.List;
      private boolean mIsCancelling;
      private String mOriginalNoteCourseId;
      private String mOriginalNoteTitle;
-     private String mOrininalNoteText;
+     private String mOriginalNoteText;
 
      @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +58,7 @@ import java.util.List;
              return;
          mOriginalNoteCourseId = mNote.getCourse().getCourseId();
          mOriginalNoteTitle = mNote.getTitle();
-         mOrininalNoteText = mNote.getText();
+         mOriginalNoteText = mNote.getText();
      }
 
      private void displayNote(Spinner spinnerCourses, EditText textNoteTitle, EditText textNoteText) {
@@ -146,7 +146,7 @@ import java.util.List;
          CourseInfo course = DataManager.getInstance().getCourse(mOriginalNoteCourseId);
          mNote.setCourse(course);
          mNote.setTitle(mOriginalNoteTitle);
-         mNote.setText(mOrininalNoteText);
+         mNote.setText(mOriginalNoteText);
      }
 
      private void saveNote() {
