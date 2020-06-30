@@ -44,5 +44,8 @@
     <string name="pref_title_display_name">Display name</string>
     <string name="pref_title_email_address">Email address</string>
     <string name="general_header">General</string>
+    <string name="pref_title_favourite_social">Favourite social network</string>
+
+    <string name="pref_default_favourite_social">https://plus.google.com</string>
 
 </resources>
