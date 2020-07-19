@@ -13,6 +13,7 @@ import android.widget.TextView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
+import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.CourseInfoEntry;
 import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.NoteInfoEntry;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -85,12 +86,19 @@ public class MainActivity extends AppCompatActivity
     private void loadNotes() {
         SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
         final String[] noteColumns = {
+                NoteInfoEntry.getQName(NoteInfoEntry._ID),
                 NoteInfoEntry.COLUMN_NOTE_TITLE,
-                NoteInfoEntry.COLUMN_COURSE_ID,
-                NoteInfoEntry._ID};
+                CourseInfoEntry.COLUMN_COURSE_TITLE
+            };
 
-        String noteOrderBy = NoteInfoEntry.COLUMN_COURSE_ID + "," + NoteInfoEntry.COLUMN_NOTE_TITLE;
-        final Cursor noteCursor = db.query(NoteInfoEntry.TABLE_NAME, noteColumns,
+        String noteOrderBy = CourseInfoEntry.COLUMN_COURSE_TITLE + "," + NoteInfoEntry.COLUMN_NOTE_TITLE;
+
+        String tablesWithJoin = NoteInfoEntry.TABLE_NAME + " JOIN " +
+                CourseInfoEntry.TABLE_NAME + " ON " +
+                NoteInfoEntry.getQName(NoteInfoEntry.COLUMN_COURSE_ID) + " = " +
+                CourseInfoEntry.getQName(CourseInfoEntry.COLUMN_COURSE_ID);
+
+        final Cursor noteCursor = db.query(tablesWithJoin, noteColumns,
                 null, null, null, null, noteOrderBy);
         mNoteRecyclerAdapter.changeCursor(noteCursor);
     }

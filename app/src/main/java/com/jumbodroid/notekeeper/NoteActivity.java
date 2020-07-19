@@ -101,19 +101,25 @@ import java.util.List;
      private void loadNoteData() {
          SQLiteDatabase db = mDbOpenHelper.getReadableDatabase();
 
-         String selection = NoteInfoEntry._ID + " = ?";
+         String selection = NoteInfoEntry.getQName(NoteInfoEntry._ID) + " = ?";
 
          String[] selectionArgs = {Integer.toString(mNoteId)};
 
          String[] noteColumns = {
-                 NoteInfoEntry.COLUMN_COURSE_ID,
+                 NoteInfoEntry.getQName(NoteInfoEntry._ID),
                  NoteInfoEntry.COLUMN_NOTE_TITLE,
-                 NoteInfoEntry.COLUMN_NOTE_TEXT
+                 NoteInfoEntry.COLUMN_NOTE_TEXT,
+                 CourseInfoEntry.COLUMN_COURSE_TITLE
          };
 
-         mNoteCursor = db.query(NoteInfoEntry.TABLE_NAME, noteColumns,
+         String tablesWithJoin = NoteInfoEntry.TABLE_NAME + " JOIN " +
+                 CourseInfoEntry.TABLE_NAME + " ON " +
+                 NoteInfoEntry.getQName(NoteInfoEntry.COLUMN_COURSE_ID) + " = " +
+                 CourseInfoEntry.getQName(CourseInfoEntry.COLUMN_COURSE_ID);
+
+         mNoteCursor = db.query(tablesWithJoin, noteColumns,
                  selection, selectionArgs, null, null, null);
-         mCourseIdPos = mNoteCursor.getColumnIndex(NoteInfoEntry.COLUMN_COURSE_ID);
+         mCourseIdPos = mNoteCursor.getColumnIndex(CourseInfoEntry.COLUMN_COURSE_TITLE);
          mNoteTitlePos = mNoteCursor.getColumnIndex(NoteInfoEntry.COLUMN_NOTE_TITLE);
          mNoteTextPos = mNoteCursor.getColumnIndex(NoteInfoEntry.COLUMN_NOTE_TEXT);
          mNoteCursor.moveToNext();
@@ -129,14 +135,32 @@ import java.util.List;
      }
 
      private void displayNote() {
-         String courseId = mNoteCursor.getString(mCourseIdPos);
+         String courseTitle = mNoteCursor.getString(mCourseIdPos);
          String noteTitle = mNoteCursor.getString(mNoteTitlePos);
          String noteText = mNoteCursor.getString(mNoteTextPos);
 
-         int courseIndex = getIndexOfCourseId(courseId);
+//         int courseIndex = getIndexOfCourseId(courseId);
+         int courseIndex = getIndexOfCourseTitle(courseTitle);
          mSpinnerCourses.setSelection(courseIndex);
          mTextNoteTitle.setText(noteTitle);
          mTextNoteText.setText(noteText);
+     }
+
+     private int getIndexOfCourseTitle(String courseTitle) {
+         Cursor cursor = mAdapterCourses.getCursor();
+         int courseTitlePos = cursor.getColumnIndex(CourseInfoEntry.COLUMN_COURSE_TITLE);
+         int courseRowIndex = 0;
+
+         boolean more = cursor.moveToFirst();
+         while (more) {
+             String cursorCourseTitle = cursor.getString(courseTitlePos);
+             if (courseTitle.equals(cursorCourseTitle))
+                 break;
+
+             courseRowIndex++;
+             more = cursor.moveToNext();
+         }
+         return courseRowIndex;
      }
 
      private int getIndexOfCourseId(String courseId) {
