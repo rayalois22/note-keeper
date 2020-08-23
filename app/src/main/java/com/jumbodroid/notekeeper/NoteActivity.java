@@ -1,9 +1,11 @@
  package com.jumbodroid.notekeeper;
 
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
@@ -20,6 +22,7 @@ import android.widget.Spinner;
 
 import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.CourseInfoEntry;
 import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.NoteInfoEntry;
+import com.jumbodroid.notekeeper.NoteKeeperProviderContract.Notes;
 
  public class NoteActivity extends AppCompatActivity {
      public static final String NOTE_ID = NoteActivity.class.getName();
@@ -37,6 +40,7 @@ import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.NoteInfoEntry;
      private int mNoteTextPos;
      private int mNoteTitlePos;
      private SimpleCursorAdapter mAdapterCourses;
+     private Uri mNoteUri;
 
      @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +92,8 @@ import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.NoteInfoEntry;
          Cursor cursor = db.query(CourseInfoEntry.TABLE_NAME, courseColumns,
                  null, null, null, null, CourseInfoEntry.COLUMN_COURSE_TITLE);
          mAdapterCourses.changeCursor(cursor);
+
+//         final Uri uri = Uri.parse("content://com.jumbodroid.notekeeper.provider");
      }
 
      @Override
@@ -122,6 +128,17 @@ import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.NoteInfoEntry;
          mNoteTextPos = mNoteCursor.getColumnIndex(NoteInfoEntry.COLUMN_NOTE_TEXT);
          mNoteCursor.moveToNext();
          displayNote();
+     }
+
+     private void loadNoteDataUsingContentProvider() {
+         String[] noteColumns = {
+                 Notes.COLUMN_COURSE_ID,
+                 Notes.COLUMN_NOTE_TITLE,
+                 Notes.COLUMN_NOTE_TEXT,
+                 Notes.COLUMN_COURSE_TITLE
+         };
+
+         mNoteUri = ContentUris.withAppendedId(Notes.CONTENT_URI, mNoteId);
      }
 
      private void saveOriginalNoteValues() {
@@ -196,12 +213,11 @@ import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.NoteInfoEntry;
 
      private void createNewNote() {
          ContentValues values = new ContentValues();
-         values.put(NoteInfoEntry.COLUMN_COURSE_ID, "");
-         values.put(NoteInfoEntry.COLUMN_NOTE_TITLE, "");
-         values.put(NoteInfoEntry.COLUMN_NOTE_TEXT, "");
+         values.put(Notes.COLUMN_COURSE_ID, "");
+         values.put(Notes.COLUMN_NOTE_TITLE, "");
+         values.put(Notes.COLUMN_NOTE_TEXT, "");
 
-         SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
-         mNoteId = (int) db.insert(NoteInfoEntry.TABLE_NAME, null, values);
+         mNoteUri = getContentResolver().insert(Notes.CONTENT_URI, values);
      }
 
      @Override
