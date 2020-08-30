@@ -18,4 +18,9 @@
         android:orderInCategory="100"
         android:title="Send as email"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_reminder"
+        android:icon="@android:drawable/stat_notify_chat"
+        android:title="Set reminder"
+        app:showAsAction="never" />
 </menu>

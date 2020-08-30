@@ -246,9 +246,16 @@ import com.jumbodroid.notekeeper.NoteKeeperProviderContract.Notes;
         else if (id == R.id.action_next) {
             moveNext();
         }
+        else if (id == R.id.action_reminder) {
+            showReminderNotification();
+        }
 
         return super.onOptionsItemSelected(item);
     }
+
+     private void showReminderNotification() {
+
+     }
 
      @Override
      public boolean onPrepareOptionsMenu(Menu menu) {
