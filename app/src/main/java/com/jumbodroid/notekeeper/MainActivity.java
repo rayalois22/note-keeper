@@ -1,10 +1,16 @@
 package com.jumbodroid.notekeeper;
 
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.PersistableBundle;
 import android.os.StrictMode;
 import android.util.Log;
 import android.view.MenuItem;
@@ -17,6 +23,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.CourseInfoEntry;
 import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.NoteInfoEntry;
+import com.jumbodroid.notekeeper.NoteKeeperProviderContract.Notes;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.view.GravityCompat;
@@ -34,6 +41,7 @@ public class MainActivity extends AppCompatActivity
     implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = MainActivity.class.getName();
+    public static final int NOTE_UPLOADER_JOB_ID = 1;
 
     private NoteRecyclerAdapter mNoteRecyclerAdapter;
     private RecyclerView mRecyclerItems;
@@ -100,6 +108,19 @@ public class MainActivity extends AppCompatActivity
         Log.d(TAG, "********** onResume **********");
         loadNotes();
         updateNavHeader();
+
+        openDrawer();
+    }
+
+    private void openDrawer() {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                DrawerLayout drawer = findViewById(R.id.drawer_layout);
+                drawer.openDrawer(GravityCompat.START);
+            }
+        }, 1000);
     }
 
     private void loadNotes() {
@@ -200,9 +221,32 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.action_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
+        } else if (id == R.id.action_backup_notes) {
+            backupNotes();
+        } else if (id == R.id.action_upload_notes) {
+            scheduleNoteUpload();
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void scheduleNoteUpload() {
+        PersistableBundle extras = new PersistableBundle();
+        extras.putString(NoteUploaderJobService.EXTRA_DATA_URI, Notes.CONTENT_URI.toString());
+
+        ComponentName componentName = new ComponentName(this, NoteUploaderJobService.class);
+        JobInfo jobInfo = new JobInfo.Builder(NOTE_UPLOADER_JOB_ID, componentName)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .build();
+
+        JobScheduler jobScheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+        jobScheduler.schedule(jobInfo);
+    }
+
+    private void backupNotes() {
+        Intent intent = new Intent(this, NoteBackupService.class);
+        intent.putExtra(NoteBackupService.EXTRA_COURSE_ID, NoteBackup.ALL_COURSES);
+        startService(intent);
     }
 
     @SuppressWarnings("StatementWithEmptyBody")

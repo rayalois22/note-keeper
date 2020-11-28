@@ -14,9 +14,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 
@@ -25,6 +28,7 @@ import com.jumbodroid.notekeeper.NoteKeeperDatabaseContract.NoteInfoEntry;
 import com.jumbodroid.notekeeper.NoteKeeperProviderContract.Notes;
 
  public class NoteActivity extends AppCompatActivity {
+     public static final String TAG = NoteActivity.class.getName();
      public static final String NOTE_ID = NoteActivity.class.getName();
      public static final int ID_NOT_SET = -1;
      private boolean mIsNewNote;
@@ -183,6 +187,8 @@ import com.jumbodroid.notekeeper.NoteKeeperProviderContract.Notes;
          mSpinnerCourses.setSelection(courseIndex);
          mTextNoteTitle.setText(noteTitle);
          mTextNoteText.setText(noteText);
+
+         CourseEventBroadcastHelper.sendEventBroadcast(this, selectedCourseId(), "Editing note");
      }
 
      private int getIndexOfCourseTitle(String courseTitle) {
@@ -212,12 +218,49 @@ import com.jumbodroid.notekeeper.NoteKeeperProviderContract.Notes;
      }
 
      private void createNewNote() {
+         AsyncTask<ContentValues, Integer, Uri> task = new AsyncTask<ContentValues, Integer, Uri>() {
+             private ProgressBar mProgressBar;
+
+             @Override
+             protected void onPreExecute() {
+                 mProgressBar = findViewById(R.id.progress_bar);
+                 mProgressBar.setVisibility(View.VISIBLE);
+                 mProgressBar.setProgress(1);
+             }
+
+             @Override
+             protected Uri doInBackground(ContentValues... contentValues) {
+                 publishProgress(2);
+                 Log.d(TAG, "doInBackground - thread: " + Thread.currentThread().getId());
+                 ContentValues insertValues = contentValues[0];
+                 Uri rowUri = getContentResolver().insert(Notes.CONTENT_URI, insertValues);
+                 publishProgress(3);
+
+                 return rowUri;
+             }
+
+             @Override
+             protected void onProgressUpdate(Integer... values) {
+                 int progressValue = values[0];
+                 mProgressBar.setProgress(progressValue);
+             }
+
+             @Override
+             protected void onPostExecute(Uri uri) {
+                 Log.d(TAG, "onPostExecute - thread: " + Thread.currentThread().getId());
+                 mNoteUri = uri;
+                 mProgressBar.setVisibility(View.GONE);
+                 Log.d(TAG, mNoteUri.toString());
+             }
+         };
+
          ContentValues values = new ContentValues();
          values.put(Notes.COLUMN_COURSE_ID, "");
          values.put(Notes.COLUMN_NOTE_TITLE, "");
          values.put(Notes.COLUMN_NOTE_TEXT, "");
 
-         mNoteUri = getContentResolver().insert(Notes.CONTENT_URI, values);
+         Log.d(TAG, "Call to execute - thread: " + Thread.currentThread().getId());
+         task.execute(values);
      }
 
      @Override
@@ -311,14 +354,10 @@ import com.jumbodroid.notekeeper.NoteKeeperProviderContract.Notes;
      }
 
      private void deleteNoteFromDatabase() {
-         final String selection = NoteInfoEntry._ID + " = ?";
-         final String[] selectionArgs = {Integer.toString(mNoteId)};
-
          AsyncTask task = new AsyncTask() {
              @Override
              protected Object doInBackground(Object[] params) {
-                 SQLiteDatabase db = mDbOpenHelper.getWritableDatabase();
-                 db.delete(NoteInfoEntry.TABLE_NAME, selection, selectionArgs);
+                 getContentResolver().delete(mNoteUri, null, null);
                  return null;
              }
          };
